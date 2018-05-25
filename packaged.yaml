@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple API Endpoint configured using Swagger specified inline and backed
+  by a Lambda function
+Outputs:
+  ApiURL:
+    Description: API endpoint URL for Prod environment
+    Value:
+      Fn::Sub: https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod
+Resources:
+  MyApi:
+    Properties:
+      DefinitionBody:
+        definitions:
+          Empty:
+            title: Empty Schema
+            type: object
+          VersionInputModel:
+            properties:
+              version:
+                type: integer
+            required:
+            - version
+            title: VersionInputModel
+            type: object
+        info:
+          title:
+            Ref: AWS::StackName
+        paths:
+          /:
+            post:
+              consumes:
+              - application/json
+              parameters:
+              - in: body
+                name: VersionInputModel
+                required: true
+                schema:
+                  $ref: '#/definitions/VersionInputModel'
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations
+              x-amazon-apigateway-request-validator: Validate body
+        swagger: 2.0
+        x-amazon-apigateway-request-validators:
+          Validate body:
+            validateRequestBody: true
+            validateRequestParameters: false
+      StageName: prod
+    Type: AWS::Serverless::Api
+  MyLambdaFunction:
+    Properties:
+      CodeUri: s3://ds-sam-us-east-1/daf53ed29e5ce6687d07b46957ac936c
+      Events:
+        GetApi:
+          Properties:
+            Method: POST
+            Path: /
+            RestApiId:
+              Ref: MyApi
+          Type: Api
+      Handler: index.handler
+      Runtime: nodejs6.10
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

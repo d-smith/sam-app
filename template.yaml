@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Simple API Endpoint configured using Swagger specified inline and backed by a Lambda function
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+        StageName: prod
+        DefinitionBody:
+            swagger: 2.0
+            info:
+              title:
+                Ref: AWS::StackName
+            paths:
+              /:
+                post:
+                  consumes:
+                  - "application/json"
+                  produces:
+                  - "application/json"
+                  parameters:
+                  - in: "body"
+                    name: "VersionInputModel"
+                    required: true
+                    schema:
+                      $ref: "#/definitions/VersionInputModel"
+                  responses:
+                    '200':
+                      description: "200 response"
+                      schema:
+                        $ref: "#/definitions/Empty"
+                  x-amazon-apigateway-request-validator: "Validate body"
+                  x-amazon-apigateway-integration:
+                    uri: 
+                      Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations
+                    responses:
+                      default:
+                        statusCode: "200"
+                    passthroughBehavior: "when_no_match"
+                    httpMethod: "POST"
+                    contentHandling: "CONVERT_TO_TEXT"
+                    type: "aws"
+            definitions:
+              VersionInputModel:
+                type: "object"
+                properties:
+                  version:
+                    type: "integer"
+                required:
+                  - version
+                title: "VersionInputModel"
+              Empty:
+                type: "object"
+                title: "Empty Schema"
+            x-amazon-apigateway-request-validators:
+              Validate body:
+                validateRequestParameters: false
+                validateRequestBody: true
+
+
+
+
+            
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src/
+      Events:
+        GetApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+            RestApiId: 
+                Ref: MyApi
+
+Outputs:
+
+    ApiURL:
+      Description: "API endpoint URL for Prod environment"
+      Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
