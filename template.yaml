@@ -31,23 +31,25 @@ Resources:
                         $ref: "#/definitions/Empty"
                   x-amazon-apigateway-request-validator: "Validate body"
                   x-amazon-apigateway-integration:
-                    uri: 
+                    uri:
                       Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations
                     responses:
                       default:
                         statusCode: "200"
-                    passthroughBehavior: "when_no_match"
+                    requestTemplates:
+                      application/json: "$input.json('$')"
+                    passthroughBehavior: "never"
                     httpMethod: "POST"
                     contentHandling: "CONVERT_TO_TEXT"
                     type: "aws"
             definitions:
               VersionInputModel:
                 type: "object"
+                required:
+                - "version"
                 properties:
                   version:
                     type: "integer"
-                required:
-                  - version
                 title: "VersionInputModel"
               Empty:
                 type: "object"
@@ -56,11 +58,11 @@ Resources:
               Validate body:
                 validateRequestParameters: false
                 validateRequestBody: true
-
-
-
-
-            
+ 
+ 
+ 
+ 
+           
   MyLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -73,11 +75,12 @@ Resources:
           Properties:
             Path: /
             Method: POST
-            RestApiId: 
+            RestApiId:
                 Ref: MyApi
-
+ 
 Outputs:
-
+ 
     ApiURL:
       Description: "API endpoint URL for Prod environment"
       Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+ 

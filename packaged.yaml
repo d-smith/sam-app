@@ -46,7 +46,9 @@ Resources:
               x-amazon-apigateway-integration:
                 contentHandling: CONVERT_TO_TEXT
                 httpMethod: POST
-                passthroughBehavior: when_no_match
+                passthroughBehavior: never
+                requestTemplates:
+                  application/json: $input.json('$')
                 responses:
                   default:
                     statusCode: '200'
